@@ -6,7 +6,8 @@
     "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
     "build": "tsc",
     "start": "node --env-file-if-exists=.env dist/index.js",
-    "test": "npm run build && node --test dist/sales.test.js dist/postgres.integration.test.js dist/http.integration.test.js"
+    "migrate": "tsx --env-file-if-exists=.env src/migrate-cli.ts",
+    "test": "npm run build && node --test dist/sales.test.js dist/postgres.integration.test.js dist/http.integration.test.js dist/migrate.integration.test.js"
   },
   "dependencies": {
     "@beta/shared": "1.0.0",

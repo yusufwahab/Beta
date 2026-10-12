@@ -1,1 +1,10 @@
-{"rewrites":[{"source":"/((?!assets/).*)","destination":"/index.html"}]}
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "installCommand": "cd ../.. && npm ci",
+  "buildCommand": "cd ../.. && npm run build -w packages/shared && npm run build -w apps/web",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {"source": "/((?!assets/).*)", "destination": "/index.html"}
+  ]
+}

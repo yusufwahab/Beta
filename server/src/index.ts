@@ -10,6 +10,8 @@ import {AppError,transaction,authorize,audit} from './db.js';
 import {createSale,reverseSale} from './services/sales.service.js';
 import {transcribe,interpret,natlasStatus} from './services/natlas.service.js';
 import type {PoolClient} from 'pg';
+import {migrateFromEnvironment} from './migrate.js';
+if(process.env.AUTO_MIGRATE==='true')await migrateFromEnvironment();
 const app=express();
 app.disable('x-powered-by');app.set('trust proxy',Number(process.env.TRUST_PROXY_HOPS??0));app.use(helmet());app.use(cors({origin:process.env.FRONTEND_URL?.split(',')??['http://localhost:5173']}));app.use(express.json({limit:'128kb'}));app.use(rateLimit({windowMs:60000,limit:120,standardHeaders:'draft-8',legacyHeaders:false}));
 const auth=process.env.SUPABASE_URL&&process.env.SUPABASE_SERVICE_ROLE_KEY?createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}}):null;
