@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.npm-cache/
+.test-pg/
+.test-pg.log
+.browser-check/
+artifacts/
+*.tsbuildinfo
