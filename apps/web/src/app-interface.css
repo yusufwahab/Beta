@@ -1,0 +1,57 @@
+/* One navigation model across the responsive business app. */
+.app-interface { min-height:100dvh; background:radial-gradient(ellipse at 50% 0,#5145f509,transparent 55%),#0b0d14; }
+.app-interface .app-content { margin-left:0; min-width:0; }
+.app-interface .app-header { position:sticky; top:0; z-index:20; min-height:78px; padding:14px max(24px,calc((100vw - 1244px)/2)); gap:22px; background:#0b0d14ed; backdrop-filter:blur(18px); }
+.app-interface .app-header .logo { font-size:28px; }
+.app-business { flex:1; min-width:0; }
+.app-business small { display:block; font-size:8px; letter-spacing:.14em; color:#7e8da4; margin-bottom:5px; }
+.app-business strong { display:block; font-size:13px; font-weight:550; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.app-avatar { display:grid; place-items:center; flex-shrink:0; width:42px; height:42px; border:1px solid #5145f540; border-radius:15px; background:#5145f51b; color:#c1baff; font-size:16px; text-transform:uppercase; }
+.app-interface .workspace { max-width:1244px; padding:32px 24px calc(130px + env(safe-area-inset-bottom)); min-width:0; }
+.app-dock { position:fixed; z-index:30; bottom:18px; left:50%; transform:translateX(-50%); width:min(620px,calc(100% - 32px)); display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); align-items:center; gap:5px; padding:9px 12px; border:1px solid #2c3346; border-radius:25px; background:#10141ff5; box-shadow:0 12px 45px #0008; backdrop-filter:blur(20px); }
+.app-dock a { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; min-width:0; min-height:58px; border-radius:16px; color:#96a3b8; font-size:11px; font-weight:550; }
+.app-dock-icon { display:grid; place-items:center; min-height:29px; width:48px; border-radius:12px; }
+.app-dock a:hover { background:#ffffff06; color:#e2e8f0; }
+.app-dock a.is-current { color:#38d6d4; }
+.app-dock a.is-current .app-dock-icon { background:#00c7cc12; }
+.app-dock .app-dock-voice .app-dock-icon { width:54px; min-height:43px; margin-top:-10px; background:#5145f5; color:white; border:1px solid #8d82ff60; border-radius:17px; box-shadow:0 4px 20px #5145f530; }
+.app-dock .app-dock-voice.is-current .app-dock-icon { background:#665bff; }
+.app-tools { max-width:900px; margin:0 auto; }
+.app-tool-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+.app-tool { position:relative; display:flex; flex-direction:column; align-items:flex-start; min-height:176px; padding:22px; border:1px solid #263041; border-radius:20px; background:linear-gradient(145deg,#151b29,#10151f); }
+.app-tool:hover { border-color:#5145f580; transform:translateY(-2px); }
+.app-tool-icon { display:grid; place-items:center; width:45px; height:45px; border-radius:14px; background:#5145f51c; color:#b1a9ff; margin-bottom:17px; }
+.app-tool:nth-child(2n) .app-tool-icon { background:#00c7cc12; color:#38d6d4; }
+.app-tool strong { font-size:14px; font-weight:550; }
+.app-tool>span:last-of-type { color:#8d9bb0; font-size:11px; line-height:1.65; margin-top:7px; }
+.app-tool-arrow { position:absolute; top:24px; right:20px; color:#6d7d96; }
+.app-tool>small { position:absolute; top:58px; right:16px; color:#38d6d4; font-size:8px; letter-spacing:.08em; }
+.app-account-card { display:flex; align-items:center; gap:13px; padding:22px 0; margin-top:18px; border-bottom:1px solid #263041; }
+.app-account-card>div { flex:1; min-width:0; }
+.app-account-card strong,.app-account-card>div>span { display:block; overflow-wrap:anywhere; }
+.app-account-card strong { font-size:13px; }
+.app-account-card>div>span { font-size:11px; color:#8d9bb0; margin-top:4px; }
+.app-language { display:flex; align-items:center; gap:7px; color:#a7b5c9; font-size:11px; min-height:44px; }
+.app-signout { margin-top:20px; }
+.app-skip { position:fixed; left:16px; top:-100px; z-index:100; padding:12px 18px; border-radius:12px; background:#5145f5; color:white; }
+.app-skip:focus { top:12px; }
+@media(max-width:600px) {
+ .app-interface .app-header { min-height:72px; padding:12px 18px; gap:14px; }
+ .app-interface .app-header .logo { font-size:24px; gap:5px; }
+ .app-interface .app-header .logo-mark { width:28px; height:30px; }
+ .app-interface .app-header-sale { display:none; }
+ .app-business strong { font-size:12px; }
+ .app-business small { font-size:7px; }
+ .app-avatar { width:38px; height:38px; border-radius:13px; }
+ .app-interface .workspace { padding:25px 18px calc(110px + env(safe-area-inset-bottom)); }
+ .app-dock { bottom:0; left:0; transform:none; width:100%; gap:0; border-radius:22px 22px 0 0; padding:9px 8px calc(8px + env(safe-area-inset-bottom)); border-bottom:0; box-shadow:0 -8px 30px #0004; }
+ .app-dock a { min-height:55px; font-size:10px; }
+ .app-tool-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+ .app-tool { min-height:173px; padding:18px 15px; border-radius:18px; }
+ .app-tool strong { font-size:13px; }
+ .app-tool-arrow { right:14px; top:20px; }
+ .app-account-card { flex-wrap:wrap; }
+ .app-language { flex-basis:100%; padding-left:51px; }
+}
+@media(prefers-reduced-motion:reduce) { .app-interface a { transition:none; } }
+@media print { .app-interface .app-dock,.app-interface .app-skip { display:none!important; } .app-interface .workspace { padding:0; } }

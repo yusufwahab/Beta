@@ -16,6 +16,28 @@ for(const language of ['en','yo'] as const)test(`MOCK services: landing to ${lan
   await speak();await expect(assistant).toContainText('How much was each one?');await expect(assistant.getByRole('button',{name:'Confirm and save'})).toHaveCount(0);expect(confirmed).toBe(0);
   await speak();await expect(assistant).toContainText('30,000');expect(confirmed).toBe(0);await assistant.getByRole('button',{name:'Confirm and save'}).click();await expect.poll(()=>confirmed).toBe(1);
  }
-
+ if(language==='en'){
+  const dock=page.getByRole('navigation',{name:'Main navigation'});
+  for(const width of [320,375,768,1280]){
+   await page.setViewportSize({width,height:812});
+   await expect(page.locator('aside')).toHaveCount(0);
+   await expect(dock.getByRole('link')).toHaveCount(5);
+   await expect(dock.getByRole('link',{name:'Voice Checkout',exact:true})).toBeVisible();
+   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
+   const box=await dock.boundingBox();expect(box).not.toBeNull();expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.x+box!.width).toBeLessThanOrEqual(width+1);
+  }
+  await page.setViewportSize({width:375,height:812});
+  await page.evaluate(()=>{(document.activeElement as HTMLElement)?.blur();window.scrollTo({top:0,behavior:'instant'});});
+  await page.screenshot({path:'artifacts/beta-app-mobile-home.png',fullPage:true});
+  await dock.getByRole('link',{name:'More',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'More with Beta'})).toBeVisible();
+  await expect(page.locator('.app-tool')).toHaveCount(6);
+  await page.screenshot({path:'artifacts/beta-app-mobile-more.png',fullPage:true});
+  await page.locator('.app-tool').filter({hasText:'Settings'}).click();
+  await expect(page).toHaveURL(/\/app\/settings$/);
+  await expect(dock.getByRole('link',{name:'More',exact:true})).toHaveClass(/is-current/);
+  await dock.getByRole('link',{name:'Home',exact:true}).click();
+  await expect(page.locator('.task-card')).toHaveCount(4);
+ }
 });
 test('mobile Start remains outside the menu; legacy auth redirects reversibly',async({page})=>{await page.setViewportSize({width:375,height:812});await page.goto('/');await expect(page.locator('.landing-nav .nav-actions a')).toBeVisible();await page.goto('/auth');await expect(page).toHaveURL(/\/start$/);});
