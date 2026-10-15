@@ -207,3 +207,5 @@ These fixtures are **not real participants or official validation evidence**.
 Browser tests likewise use explicit fixtures for dashboard/telemetry behavior. They do
 not seed Supabase or claim to have recruited 50 people. Collect actual live trials and
 team-confirm distinct people before using exported metrics in the official submission.
+
+Spreadsheet invitations and masked email evidence are documented in [VALIDATION_INVITATIONS.md](VALIDATION_INVITATIONS.md).

@@ -41,6 +41,7 @@ async function sendMessage(email:string,message:ReturnType<typeof renderEmail>,c
   }
   if(typeof data.messageId!=='string'||!data.messageId)throw new Error('Missing delivery acceptance');
   console.info('Brevo accepted an authentication email');
+  return data.messageId;
  }catch(error){
   if(error instanceof EmailDeliveryError)throw error;
   console.error('Brevo email request failed',{reason:'network_or_invalid_response'});
@@ -54,4 +55,9 @@ export async function sendVerificationCode(email:string,code:string,config:Retur
 export async function sendPasswordRecovery(email:string,link:string,config:ReturnType<typeof emailConfig>,request:typeof fetch=fetch){
  if(!z.url().safeParse(link).success||!['http:','https:'].includes(new URL(link).protocol))throw new EmailDeliveryError(502,'Unable to create your password recovery email. Please try again.');
  await sendMessage(email,renderEmail('Reset your Beta password','Follow this link to choose a new password for your Beta account.',undefined,link),config,request);
+}
+export async function sendValidationInvitation(email:string,link:string,config:ReturnType<typeof emailConfig>,request:typeof fetch=fetch){
+ const message=renderEmail('You are invited to test Beta','Help test Beta in English, Yoruba, Hausa or Igbo. Your private invitation lets you continue without a password. Before you start, Beta will explain how your email and anonymous usage evidence are recorded. This invitation expires in seven days.',undefined,link);
+ message.htmlContent=message.htmlContent.replace('Reset my password','Start testing Beta');
+ return sendMessage(email,message,config,request);
 }

@@ -1,3 +1,4 @@
+import {invitationAdminRoutes} from './validation-invitation-routes.js';
 import {Router} from 'express';
 import {z} from 'zod';
 import {languages} from '@beta/shared';
@@ -12,6 +13,7 @@ export function validationRoutes(){const router=Router();router.use((req,res,nex
  router.post('/validation/events',async(req,res)=>{const result=await clientEvents(res.locals.user.id,req.body,req.headers['user-agent']??'');if(!result&&validationMode())throw new AppError(503,'Validation tracking is temporarily unavailable');res.json({data:result??{accepted:0}});});
  router.post('/validation/heartbeat',async(req,res)=>{const input=z.object({closing:z.boolean().default(false)}).strict().parse(req.body);await tracking(res.locals.user.id,db=>db.query('update validation_sessions set last_seen_at=clock_timestamp(),completed_at=case when $3 then clock_timestamp() else completed_at end where supabase_user_id=$1 and mode=$2',[res.locals.user.id,validationMode(),input.closing]));res.json({data:{ok:true}});});
  router.use('/admin/validation',(_req,res,next)=>{if(!isValidationAdmin(res.locals.user))return next(new AppError(403,'Team-only validation access'));next();});
+ router.use('/admin/validation',invitationAdminRoutes());
  const admin=<T>(user:string,fn:(db:PoolClient)=>Promise<T>)=>transaction(user,async db=>{await db.query("select set_config('beta.validation_admin','true',true)");return fn(db);});
  router.get('/admin/validation/summary',async(req,res)=>{const mode=modeSchema.parse(req.query.mode);res.json({data:await admin(res.locals.user.id,db=>validationSummary(db,mode))});});
  router.get('/admin/validation/sessions',async(req,res)=>{const input=z.object({mode:modeSchema,limit:z.coerce.number().int().min(1).max(100).default(50),offset:z.coerce.number().int().min(0).max(100000).default(0),include_excluded:z.enum(['true','false']).default('false')}).parse(req.query);const data=await admin(res.locals.user.id,async db=>{const total=(await db.query('select count(*)::int total from validation_sessions where mode=$1 and ($2 or not excluded)',[input.mode,input.include_excluded==='true'])).rows[0].total;const sessions=(await db.query(`select ${sessionColumns},(select count(*)::int from validation_events e where e.session_id=s.id) event_count from validation_sessions s where mode=$1 and ($2 or not excluded) order by started_at desc,id desc limit $3 offset $4`,[input.mode,input.include_excluded==='true',input.limit,input.offset])).rows;return {sessions,total};});res.json({data});});

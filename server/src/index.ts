@@ -1,3 +1,4 @@
+import {publicInvitationRoutes} from './validation-invitation-routes.js';
 import {validationRoutes,isValidationAdmin} from './validation-routes.js';
 import {asrStarted,asrFinished,requestTracking,workflowSaved,validationIdentity} from './services/validation.service.js';
 import {rememberCommand} from './services/intent.service.js';
@@ -25,6 +26,7 @@ app.disable('x-powered-by');app.set('trust proxy',Number(process.env.TRUST_PROXY
 app.use(express.json({limit:'128kb'}));app.use(rateLimit({windowMs:60000,limit:120,standardHeaders:'draft-8',legacyHeaders:false}));
 // Public registration and email requests are rate limited before session-protected business routes.
 app.use(authEmailRoutes());
+app.use(publicInvitationRoutes());
 const auth=process.env.SUPABASE_URL&&process.env.SUPABASE_SERVICE_ROLE_KEY?createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}}):null;
 app.get('/api/health',(_req,res)=>res.json({data:{status:'ok',database_configured:!!process.env.DATABASE_URL,auth_configured:!!auth,email:emailStatus(),natlas:natlasStatus()}}));
 app.use('/api',async(req,res,next)=>{try{if(!auth)throw new AppError(503,'Supabase authentication is not configured');const token=req.headers.authorization?.match(/^Bearer (.+)$/)?.[1];if(!token)throw new AppError(401,'Please sign in');const {data,error}=await auth.auth.getUser(token);if(error||!data.user)throw new AppError(401,'Your session has expired. Please sign in again.');if(!data.user.is_anonymous&&!data.user.email_confirmed_at)throw new AppError(403,'Please verify your email before opening your business');res.locals.user=data.user;next();}catch(e){next(e);}});

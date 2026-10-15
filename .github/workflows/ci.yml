@@ -27,7 +27,7 @@ jobs:
         env:
           BETA_HTTP_TEST_DATABASE_URL: postgres://postgres:beta_test@localhost:5432/beta_test
       - name: Validation evidence security and persistence (local fixtures only)
-        run: node --test server/dist/validation.integration.test.js
+        run: node --test server/dist/validation.integration.test.js && node --test server/dist/validation-invitations.integration.test.js
         env:
           BETA_VALIDATION_TEST_DATABASE_URL: postgres://postgres:beta_test@localhost:5432/beta_test
       - name: Create isolated migration-test database

@@ -1,10 +1,11 @@
+import SignOutButton from './SignOutButton';
 import {useEffect} from 'react';
 import JourneyGuide from './JourneyGuide';
 import {NavLink,Outlet,Link,useLocation} from 'react-router-dom';
-import {Home,Mic,Receipt,Package,Wallet,Users,HandCoins,FileCheck,Radio,Settings,LogOut,Grid2X2,ArrowUpRight,Plus,Globe} from 'lucide-react';
+import {Home,Mic,Receipt,Package,Wallet,Users,HandCoins,FileCheck,Radio,Settings,Grid2X2,ArrowUpRight,Plus,Globe} from 'lucide-react';
 import {Logo} from './ui';
-import {useBusiness,useSession} from './session';
-import {supabase,languageNames} from './lib';
+import {useBusiness} from './session';
+import {languageNames} from './lib';
 import './app-interface.css';
 
 const tools=[
@@ -19,12 +20,11 @@ const tabs=[['','Home',Home],['sales','Sales',Receipt],['checkout','Speak',Mic],
 
 export function AppMenu(){
  const {business,profile}=useBusiness();
- const {session}=useSession();
  return <section className="app-tools" aria-labelledby="app-tools-title">
   <div className="page-heading"><div><span className="eyebrow">YOUR BUSINESS</span><h1 id="app-tools-title">More with Beta</h1><p>Everything else you need, in one place.</p></div></div>
   <div className="app-tool-grid">{tools.map(([path,label,description,Icon])=><Link className="app-tool" to={`/app/${path}`} key={path}><span className="app-tool-icon"><Icon size={24}/></span><strong>{label}</strong><span>{description}</span><ArrowUpRight className="app-tool-arrow" size={17}/>{path==='ambient'&&<small>DEMO</small>}</Link>)}</div>
   <div className="app-account-card"><span className="app-avatar" aria-hidden="true">{profile?.trader_name?.slice(0,1)||'B'}</span><div><strong>{profile?.trader_name||business?.name}</strong><span>{business?.name}</span></div><Link to="/app/settings" className="app-language"><Globe size={16}/>{languageNames[profile?.preferred_language??'en']}</Link></div>
-  {!session?.user.is_anonymous&&<button className="btn-secondary app-signout" onClick={()=>void supabase?.auth.signOut()}><LogOut size={18}/>Sign out</button>}
+  <SignOutButton className="btn-secondary app-signout"/>
  </section>;
 }
 

@@ -12,6 +12,7 @@ test('LOCAL FIXTURES ONLY: validation deduplication, authoritative evidence, pri
  const setup=new pg.Client({connectionString:url});await setup.connect();
  if(!(await setup.query("select to_regclass('public.validation_sessions') table_name")).rows[0].table_name)await setup.query(await readFile(new URL('../../supabase/migrations/202610120002_validation.sql',import.meta.url),'utf8'));
  if(!(await setup.query("select 1 from information_schema.columns where table_schema='public' and table_name='validation_sessions' and column_name='mode'")).rowCount)await setup.query(await readFile(new URL('../../supabase/migrations/202610150001_validation_integrity.sql',import.meta.url),'utf8'));
+ if(!(await setup.query("select to_regclass('public.validation_invitations') present")).rows[0].present)await setup.query(await readFile(new URL('../../supabase/migrations/202610150002_validation_invitations.sql',import.meta.url),'utf8'));
  const users={trader:crypto.randomUUID(),other:crypto.randomUUID(),admin:crypto.randomUUID()};for(const id of Object.values(users))await setup.query('insert into auth.users(id) values($1)',[id]);
  const auth=createServer((req,res)=>{const key=req.headers.authorization?.replace('Bearer ','') as keyof typeof users;res.setHeader('Content-Type','application/json');if(!(key in users)){res.writeHead(401);res.end('{}');return;}res.end(JSON.stringify({id:users[key],is_anonymous:key!=='admin',email_confirmed_at:key==='admin'?new Date().toISOString():undefined,app_metadata:key==='admin'?{beta_validation_admin:true}:{},user_metadata:{beta_validation_admin:true},aud:'authenticated',role:'authenticated'}));});
  let failAsr=false;
@@ -29,6 +30,10 @@ test('LOCAL FIXTURES ONLY: validation deduplication, authoritative evidence, pri
  const audio=()=>{const form=new FormData();form.set('audio',new Blob([wav],{type:'audio/wav'}),'fixture.wav');form.set('language','yo');return form;};
  try{
   await call('/admin/validation/summary',undefined,'invalid',401);await call('/admin/validation/summary',undefined,'trader',403);await call('/admin/validation/summary?key=not-an-admin-key',undefined,'other',403);
+  await call('/admin/validation/invitations?mode=live',undefined,'trader',403);
+  const contactEmail=`fixture-${crypto.randomUUID()}@example.invalid`;const contactFile=(commit=false)=>{const form=new FormData();form.set('file',new Blob([`Name,Email,Phone\nPRIVATE INVITED NAME,${contactEmail},+234000000`],{type:'text/csv'}),'contacts.csv');form.set('mode','live');form.set('commit',String(commit));return form;};
+  assert.equal((await call('/admin/validation/invitations/import',contactFile(),'admin')).ready,1);assert.equal((await call('/admin/validation/invitations/import',contactFile(true),'admin')).imported,1);
+  const invitationExport=await call('/admin/validation/invitations/export.csv?mode=live',undefined,'admin');assert.ok(invitationExport.includes('fi***@example.invalid'));assert.ok(!invitationExport.includes(contactEmail));assert.ok(!invitationExport.includes('PRIVATE INVITED NAME'));assert.ok(!invitationExport.includes('+234000000'));
   const baseline=await summary();const [first,reload]=await Promise.all([call('/validation/session',{language:'yo'},'trader',200,undefined,headers),call('/validation/session',{language:'yo'},'trader')]);assert.equal(first.id,reload.id);assert.match(first.participant_id,/^BETA-\d{3,}$/);
   const other=await call('/validation/session',{language:'en'},'other');assert.notEqual(first.participant_id,other.participant_id);
   await call('/validation/events',{events:[clientEvent]});await call('/validation/events',{events:[clientEvent]});assert.equal((await summary()).participants,baseline.participants);
