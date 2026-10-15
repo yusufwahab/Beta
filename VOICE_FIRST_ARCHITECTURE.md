@@ -157,6 +157,16 @@ Read-only queries use RLS-protected SQL and localized response templates. Sales,
 estimate and is unavailable where cost data is missing; it is not invented from sales.
 Customer/debtor reports also link to the existing debt detail screen.
 
+## Continued guidance and editable results
+
+The dashboard now has a persistent five-step journey, skip/known/pause/resume controls,
+localized spoken cues and contextual recommendations. Progress uses the existing
+`activity_events` table. Onboarding has a final editable review; shared forms allow
+voice entry into individual fields. The assistant supports editable transcripts,
+editable transaction fields and spoken corrections. An edited draft gets a new
+server-issued confirmation ID and recalculated preview. Nothing saves until the user
+confirms again. See [guided journey and review](docs/GUIDED_JOURNEY_AND_REVIEW.md).
+
 ## Financial safety
 
 ```text
@@ -186,9 +196,10 @@ configured voice ID, idempotency key, MP3 output, timeouts, content-type and siz
 The browser calls authenticated `/api/voice/speak` through `ttsService.speak({text,language})`.
 Already-localized templates are sent as written; no runtime translation or LLM is required.
 
-**Status: implemented and mock-tested; real synthesis blocked.** `YARNGPT_API_KEY` is absent.
-The real integration test was executed and stopped explicitly for the missing key. No
-audio response or provider timing is fabricated.
+**Status: real synthesis verified on 2026-10-15.** The configured YarnGPT account returned
+a real English dashboard greeting and short ready prompts in Yoruba, Hausa and Igbo.
+All four MP3 responses fully decoded. See `docs/GUIDED_JOURNEY_AND_REVIEW.md` for actual
+byte counts, timings, review behavior and browser/database test distinctions.
 
 Obtain an API key from the [YarnGPT Account page](https://www.yarngpt.ai/api-docs), after
 signing in and completing the provider's verification. Run `node infra/list_yarngpt_voices.mjs` after setting the key, or query its authenticated voice

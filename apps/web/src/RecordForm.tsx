@@ -1,0 +1,26 @@
+import {validationEdited,validationConfirmed} from './validation';
+import {useRef,useState} from 'react';
+import {reviewText} from '@beta/shared';
+import {api} from './lib';
+import {useVoiceLanguage} from './voice-language';
+import {transcribeOnboarding,stopAudio} from './audio';
+import VoiceRecorder from './VoiceRecorder';
+import {Button,Field,ErrorBox} from './ui';
+export type FormField={name:string;label:string;type?:string;options?:{value:string;label:string}[];optional?:boolean;defaultValue?:string|number;min?:number;step?:string};
+export default function RecordForm({fields,onSubmit,label='Save record'}:{fields:FormField[];onSubmit:(body:Record<string,string>)=>Promise<unknown>;label?:string}){
+ const {language}=useVoiceLanguage();const t=(key:Parameters<typeof reviewText>[1])=>reviewText(language,key);
+ const form=useRef<HTMLFormElement>(null);const [error,setError]=useState<unknown>(),[busy,setBusy]=useState(false),[success,setSuccess]=useState(false),[submissionKey,setSubmissionKey]=useState(()=>crypto.randomUUID());
+ const [voice,setVoice]=useState(false),[voiceField,setVoiceField]=useState(''),[heard,setHeard]=useState(''),[value,setValue]=useState(''),[voiceDerived,setVoiceDerived]=useState(false),[review,setReview]=useState<Record<string,string>|null>(null);
+ const selected=fields.find(field=>field.name===voiceField)??fields.find(field=>!field.options);
+ async function audio(blob:Blob){setBusy(true);setError(null);try{const result=await transcribeOnboarding(blob,language);setHeard(result.text);setValue(result.text)}catch(error){setError(error)}finally{setBusy(false)}}
+ async function apply(){if(!selected)return;setBusy(true);setError(null);try{const result=await api<{value:string}>('/voice/field/interpret',{text:value,numeric:selected.type==='number'});const input=form.current?.elements.namedItem(selected.name);if(!(input instanceof HTMLInputElement))return;setVoiceDerived(true);input.value=result.value;input.dispatchEvent(new Event('input',{bubbles:true}));if(!input.checkValidity())throw new Error('Check this value before continuing. You can edit the field manually.');setVoiceDerived(true);setReview(null);setSuccess(false);}catch(error){setError(error)}finally{setBusy(false)}}
+ async function save(data:Record<string,string>){if(voiceDerived)validationConfirmed();setBusy(true);setError(null);setSuccess(false);stopAudio();try{await onSubmit({...data,idempotency_key:submissionKey});form.current?.reset();setSubmissionKey(crypto.randomUUID());setSuccess(true);setReview(null);setVoiceDerived(false);setHeard('');setValue('');setVoice(false);}catch(error){setError(error)}finally{setBusy(false)}}
+ function submit(event:React.FormEvent<HTMLFormElement>){event.preventDefault();const data=Object.fromEntries([...new FormData(event.currentTarget)].map(([key,value])=>[key,String(value)]));if(voiceDerived){stopAudio();setReview(data);}else void save(data);}
+ return <form ref={form} onSubmit={submit}><ErrorBox error={error}/>{success&&<div className="success-box" role="status">Record saved.</div>}
+  <fieldset disabled={busy||!!review} onChange={event=>{const input=event.target;if(voiceDerived&&input instanceof HTMLInputElement&&input.name)validationEdited(input.name)}}><div className="form-grid">{fields.map(field=><Field key={field.name} label={field.label}>{field.options?<select name={field.name} defaultValue={field.defaultValue} required={!field.optional}><option value="">Select…</option>{field.options.map(option=><option key={option.value} value={option.value}>{option.label}</option>)}</select>:<input name={field.name} type={field.type??'text'} required={!field.optional} defaultValue={field.defaultValue} min={field.min??(field.type==='number'?0:undefined)} step={field.step??(field.type==='number'?'0.01':undefined)} maxLength={field.type==='number'?undefined:200}/>}</Field>)}</div>
+  {fields.some(field=>!field.options)&&<Button secondary onClick={()=>{stopAudio();setVoice(!voice)}}>{t('fillVoice')}</Button>}
+  {voice&&<div className="voice-field-fill"><Field label={t('field')}><select aria-label={t('field')} value={selected?.name??''} onChange={event=>{setVoiceField(event.target.value);setHeard('');setValue('')}}>{fields.filter(field=>!field.options).map(field=><option value={field.name} key={field.name}>{field.label}</option>)}</select></Field><VoiceRecorder onAudio={audio} disabled={busy}/>{heard&&<><p>{t('heard')}: {heard}</p><Field label={t('value')}><input value={value} onChange={event=>{validationEdited(selected?.name??'other');setValue(event.target.value)}} maxLength={200}/></Field><Button secondary disabled={!value.trim()||busy} onClick={()=>void apply()}>{t('apply')}</Button></>}</div>}
+  </fieldset>
+  {review?<div className="record-review"><h3>{t('confirmDetails')}</h3><dl>{fields.map(field=><div className="summary-line" key={field.name}><dt>{field.label}</dt><dd>{review[field.name]||'—'}</dd></div>)}</dl><div className="button-row"><Button disabled={busy} onClick={()=>void save(review)}>{t('confirmRecord')}</Button><Button secondary disabled={busy} onClick={()=>setReview(null)}>{t('editDetails')}</Button></div></div>:<Button type="submit" disabled={busy}>{busy?'…':voiceDerived?t('review'):label}</Button>}
+ </form>;
+}

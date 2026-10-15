@@ -21,7 +21,7 @@ export function parseCommand(text:string,products:Product[],previous?:Command):C
  const s=normalize(z.string().trim().min(1).max(16000).parse(text));
  const rules:[Name,RegExp][]=[['CANCEL',/^(cancel|stop|never mind|fagile|soke|kagbu)$/],['CONFIRM',/^(yes|confirm|correct|beni|bee ni|eh|ee|iya)$/],['HELP',/^(help|help me|iranlowo|taimako|enyemaka)$/],['RECORD_DEBT_PAYMENT',/\b(repaid|repayment|paid back|san gbese|biya bashi|kwuo ugwo)\b/],['LIST_DEBTORS',/\b(who owes|list debtors|awon onigbese|masu bashi)\b/],['CHECK_DEBT',/\b(owes|debt balance|check debt|gbese|bashi|ugwo)\b/],['GET_PROFIT_SUMMARY',/\b(profit|ere oni|riba|uru)\b/],['GET_TODAY_SALES',/\b(how much.*today|today.*sales|sales today|tita oni|cinikin yau|ahia taa)\b/],['GET_PERIOD_SALES',/\b(sales.*(week|month|yesterday)|sold.*(week|month)|how much.*(week|month|yesterday)|tita ose|cinikin wata)\b/],['GET_EXPENSES',/\b(show expenses|how much.*spent|expenses today|owo inawo)\b/],['ADD_STOCK',/\b(restock|add stock|received|fi.*kun|kara kaya|tinye ngwaahia)\b/],['CHECK_STOCK',/\b(stock|how many.*left|in stock|o ku|kaya.*rage|fodu)\b/],['RECORD_DEBT',/\b(lend|lent|record debt|on credit|ya.*owo)\b/],['RECORD_EXPENSE',/\b(spent|expense|paid for|bought|na owo|naira.*transport|kashe|mefuru)\b/],['RECORD_SALE',/\b(sold|sell|sale|ta|mo ta|sayar|ere|na ere)\b/]];
  const matched=rules.find(([,rule])=>rule.test(s));
- let intent=matched?.[0];const continuing=!intent&&previous&&previous.missing.length>0;
+ let intent=matched?.[0];const correcting=!!previous&&/^(no\b|actually\b|correction\b|i said\b|change\b|rara\b|a a\b|ba haka\b|mba\b)/.test(s);const continuing=!intent&&previous&&(previous.missing.length>0||correcting);
  if(continuing)intent=previous.intent;
  const result:Command={intent:intent??'HELP',confidence:intent?0.8:0,entities:continuing?{...previous.entities}:{},missing:[]};
  if(!intent){result.clarification='help';return result;}
@@ -34,22 +34,26 @@ export function parseCommand(text:string,products:Product[],previous?:Command):C
  const amountMatch=s.match(/\b(?:at|each|per|for|amount|spent|paid|lent|repaid)\s+(.+?)(?:\s+(?:each|per|naira|to|from|on)\b|$)/);
  const amount=amountMatch?parseNumber(amountMatch[1]):undefined;
  if(amount&&(intent!=='RECORD_SALE'||/\b(at|each|per)\b/.test(s)))result.entities[intent==='RECORD_SALE'?'unit_price':'amount']=amount;
- const quantityText=match?s.slice(0,s.indexOf(normalize(match.name))):'';
+ const quantityText=match?s.slice(0,s.indexOf(normalize(match.name))):continuing&&/\b(quantity|bags?|bottles?|units?|pieces?|packs?|apo|buhu|kwalabe|akpa|iye|adadin)\b/.test(s)?s:'';
  const qty=quantityText.match(/\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|meji|meta|daya|biyu|uku|otu|abuo|ato)(?:\s|$)/u);
  if(qty){const value=Number(parseNumber(qty[1]));if(Number.isInteger(value)&&value>0&&value<=100000)result.entities.quantity=value;}
  const customer=s.match(/\b(?:to|from|customer)\s+([\p{L}][\p{L}\s]{0,99})$/u);if(customer)result.entities.customer=customer[1].trim();
  result.entities.period=/\b(last month|osu to koja|watan da ya gabata|onwa gara aga)\b/.test(s)?'last_month':/\b(last week|ose to koja|makon da ya gabata|izu gara aga)\b/.test(s)?'last_week':/\b(month|osu|wata|onwa)\b/.test(s)?'month':/\b(week|ose|mako|izu)\b/.test(s)?'week':/\b(yesterday|ana|jiya|nyaahu)\b/.test(s)?'yesterday':result.entities.period??'today';
  const category=s.match(/\b(transport|rent|utilities|supplies|food)\b/);if(category)result.entities.category=category[1];
  if(continuing){const value=parseNumber(s);const field=previous.missing[0];if(value&&['unit_price','amount'].includes(field))result.entities[field as 'unit_price'|'amount']=value;if(value&&field==='quantity'&&Number.isInteger(Number(value))&&Number(value)>0)result.entities.quantity=Number(value);if(field==='customer'&&!value)result.entities.customer=text.trim().slice(0,100);}
+ if(correcting&&continuing){const value=spokenNumber(s);if(value&&/\b(price|each|naira|amount|owo|farashi|ego|kowanne)\b/.test(s)&&!qty)result.entities[intent==='RECORD_SALE'?'unit_price':'amount']=value;}
  const required:Partial<Record<Name,string[]>>={RECORD_SALE:['product','quantity','unit_price'],RECORD_EXPENSE:['amount','category'],ADD_STOCK:['product','quantity'],RECORD_DEBT:['customer','amount'],RECORD_DEBT_PAYMENT:['customer','amount'],CHECK_STOCK:['product']};
  result.missing=(required[intent]??[]).filter(field=>!(result.entities as Record<string,unknown>)[field]);
  if(exact.length>1)result.missing=['product',...result.missing.filter(x=>x!=='product')];
  result.confidence=result.missing.length?0.55:0.9;
+ if(correcting&&JSON.stringify(result.entities)===JSON.stringify(previous?.entities)){result.missing=['review'];result.confidence=0.4;}
  if(result.missing.length)result.clarification=result.missing[0];
  return result;
 }
 
 // Bounded, short-lived, user/business-scoped drafts. Restarting the process discards drafts.
 const drafts=new Map<string,{command:Command;expires:number}>();
+export function rememberCommand(scope:string,command:Command){if(drafts.size>=2000)drafts.delete(drafts.keys().next().value!);drafts.set(scope,{command,expires:Date.now()+5*60_000});}
+export function spokenNumber(text:string){if(/[-−]\s*\d|\b(minus|negative)\b/i.test(text))return undefined;const words=normalize(text).split(' ');const groups:string[]=[];let group:string[]=[];for(const word of [...words,'']){if(word in small||['hundred','thousand','million','and'].includes(word)||/^\d+(?:\.\d{1,2})?$/.test(word))group.push(word);else if(group.length){groups.push(group.join(' '));group=[];}}return groups.length===1?parseNumber(groups[0]):undefined;}
 export function commandTurn(scope:string,text:string,products:Product[]){const old=drafts.get(scope);const command=parseCommand(text,products,old&&old.expires>Date.now()?old.command:undefined);if(command.intent==='CANCEL')drafts.delete(scope);else if(!['HELP','CONFIRM'].includes(command.intent)){if(drafts.size>=2000)drafts.delete(drafts.keys().next().value!);drafts.set(scope,{command,expires:Date.now()+5*60_000});}return command;}
 export function saleIntent(text:string,products:Product[],scope:string){const command=commandTurn(scope,text,products);if(command.intent!=='RECORD_SALE')return intentSchema.parse({intent:'record_sale',items:[{product_name:command.entities.product??'Unrecognized product',quantity:null,unit_price:null}],payment_status:'unknown',clarification:'Please describe the sale, or cancel and try again.'});return intentSchema.parse({intent:'record_sale',items:[{product_name:command.entities.product??'Unrecognized product',quantity:command.entities.quantity??null,unit_price:command.entities.unit_price??null}],payment_status:'unknown',...(command.missing.length?{clarification:`Please confirm ${command.missing.join(', ').replaceAll('_',' ')}.`}:{})});}

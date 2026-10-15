@@ -1,0 +1,11 @@
+import {parseArgs} from 'node:util';
+import {createClient} from '@supabase/supabase-js';
+process.loadEnvFile('server/.env');
+const {values}=parseArgs({options:{'user-id':{type:'string'},revoke:{type:'boolean',default:false}}});
+if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(values['user-id']??''))throw new Error('Run from the project root: node infra/validation_admin.mjs --user-id <confirmed-team-auth-user-uuid> [--revoke]');
+if(!process.env.SUPABASE_URL||!process.env.SUPABASE_SERVICE_ROLE_KEY)throw new Error('Configure the existing backend Supabase credentials first');
+const client=createClient(process.env.SUPABASE_URL,process.env.SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false}});
+const {data,error}=await client.auth.admin.getUserById(values['user-id']);if(error||!data.user)throw new Error('Team account was not found');
+if(data.user.is_anonymous||!data.user.email_confirmed_at)throw new Error('Use a confirmed, non-anonymous team account');
+const result=await client.auth.admin.updateUserById(data.user.id,{app_metadata:{...data.user.app_metadata,beta_validation_admin:!values.revoke}});if(result.error)throw new Error('Could not update team access');
+console.log(values.revoke?'Validation team access revoked.':'Validation team access enabled. Sign in again to refresh the session.');

@@ -49,9 +49,20 @@ The official source is [NCAIR's model page](https://ncair.nitda.gov.ng/llm/), li
 
 `infra/modal_natlas_asr.py` now uses CPU only (4 cores, 8 GiB, float32) and persistent model caching. It is deployed at `https://yusufabdulwhab--beta-natlas-asr-api.us-east.modal.run`. Actual Nigerian English, Yoruba, Hausa and Igbo recordings passed; all four official models now have verified access and inference. Express holds the private bearer key. See [NATLAS_MODAL_DEPLOYMENT.md](NATLAS_MODAL_DEPLOYMENT.md) for actual responses, measured latency and redeployment commands.
 
-Beta's controlled intent engine replaces the external 8B LLM dependency. It proposes validated drafts and asks for missing information. Financial changes reuse existing transaction handlers only after explicit confirmation. A shared language provider and centralized templates support onboarding, voice commands and dynamic YarnGPT responses. The seven supplied static onboarding MP3 prompts are installed for Yoruba, Hausa and Igbo; English recordings are still missing. See `apps/web/public/audio/README.md` for audio import and playback tests. Dynamic YarnGPT synthesis still requires credentials; no successful synthesis is claimed.
+Beta's controlled intent engine replaces the external 8B LLM dependency. It proposes validated drafts and asks for missing information. Financial changes reuse existing transaction handlers only after explicit confirmation. A shared language provider and centralized templates support onboarding, voice commands and dynamic YarnGPT responses. The seven supplied static onboarding MP3 prompts are installed for Yoruba, Hausa and Igbo; English recordings are still missing. See `apps/web/public/audio/README.md` for audio import and playback tests. Real YarnGPT synthesis has been verified in all four languages; credentials remain backend-only.
+
+The dashboard continues with a saved five-step guide: add product, record sale, record expense, record debt, then view the summary. Traders can skip, mark a step as known, pause/resume, and replay guidance. Afterward, suggestions use actual sales, expenses and stock. Voice results support manual edits and spoken corrections, followed by a fresh review and explicit confirmation. See [guided journey and review](docs/GUIDED_JOURNEY_AND_REVIEW.md) for behavior, endpoints, verification and limits. No additional SQL table is required.
 
 Beta records at most 30 seconds and allows 8 MiB uploads. It validates MIME and container headers, discards server audio buffers, keeps transcripts with the actual model ID, and never saves a proposed sale automatically. Existing validation, explicit confirmation, and atomic database/inventory updates remain in place.
+
+## Validation evidence
+
+Quiet background validation tracking and the team-only `/admin/validation` dashboard
+are implemented. The validation tables and RLS policies have been installed without
+seeding participants. Development uses `VALIDATION_MODE=test`; use `live` for actual
+trials. See [validation setup, admin access and evidence rules](VALIDATION_TRACKING.md).
+Normal trader navigation is unchanged by tracking. Device identities and team-confirmed
+real people are reported separately; reloads do not create new participants.
 
 ## Checks
 

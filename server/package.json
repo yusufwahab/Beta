@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node --env-file-if-exists=.env dist/index.js",
     "migrate": "tsx --env-file-if-exists=.env src/migrate-cli.ts",
-    "test": "npm run build && node --test dist/sales.test.js dist/natlas.test.js dist/intent.test.js dist/tts.test.js dist/auth-email.test.js dist/postgres.integration.test.js dist/http.integration.test.js dist/migrate.integration.test.js"
+    "test": "npm run build && node --test dist/sales.test.js dist/natlas.test.js dist/intent.test.js dist/tts.test.js dist/auth-email.test.js dist/postgres.integration.test.js dist/http.integration.test.js dist/migrate.integration.test.js dist/validation.integration.test.js"
   },
   "dependencies": {
     "@beta/shared": "1.0.0",

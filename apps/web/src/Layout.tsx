@@ -1,4 +1,5 @@
 import {useEffect} from 'react';
+import JourneyGuide from './JourneyGuide';
 import {NavLink,Outlet,Link,useLocation} from 'react-router-dom';
 import {Home,Mic,Receipt,Package,Wallet,Users,HandCoins,FileCheck,Radio,Settings,LogOut,Grid2X2,ArrowUpRight,Plus,Globe} from 'lucide-react';
 import {Logo} from './ui';
@@ -36,7 +37,7 @@ export default function Layout(){
   <a className="app-skip" href="#business-content">Skip to content</a>
   <div className="app-content">
    <header className="app-header"><Logo/><Link to="/app" className="app-business"><small>YOUR BUSINESS</small><strong>{business?.name||'My business'}</strong></Link><Link to="/app/checkout" className="btn-primary app-header-sale"><Plus size={17}/>Record a sale</Link><Link to="/app/settings" className="app-avatar" aria-label="Profile and settings">{profile?.trader_name?.slice(0,1)||<Settings size={20}/>}</Link></header>
-   <main className="workspace" id="business-content" tabIndex={-1}><Outlet/></main>
+   <main className="workspace" id="business-content" tabIndex={-1}><JourneyGuide/><Outlet/></main>
   </div>
   <nav className="app-dock" aria-label="Main navigation">{tabs.map(([path,label,Icon])=><NavLink to={`/app/${path}`} end={path===''} key={path} aria-label={path==='checkout'?'Voice Checkout':label} className={({isActive})=>[path==='checkout'?'app-dock-voice':'',(isActive||(path==='more'&&moreActive))?'is-current':''].filter(Boolean).join(' ')}><span className="app-dock-icon"><Icon size={23}/></span><span>{label}</span></NavLink>)}</nav>
  </div>;
