@@ -1,0 +1,10 @@
+import {writeFile,mkdir} from 'node:fs/promises';
+import {parseArgs} from 'node:util';
+import {voiceText} from '../packages/shared/dist/index.js';
+process.loadEnvFile('server/.env');
+const {values}=parseArgs({options:{language:{type:'string',default:'en'}}});
+if(!['en','yo','ha','ig'].includes(values.language))throw new Error('Language must be en, yo, ha or ig');
+if(!process.env.YARNGPT_API_KEY)throw new Error('Real TTS test blocked: obtain YARNGPT_API_KEY from the YarnGPT Account page and configure server/.env');
+const {synthesize}=await import('../server/dist/services/tts.service.js');
+const started=performance.now();const audio=await synthesize({text:voiceText(values.language,'ready'),language:values.language,idempotency_key:crypto.randomUUID()});
+await mkdir('artifacts',{recursive:true});await writeFile(`artifacts/yarngpt-${values.language}.mp3`,audio);console.log(JSON.stringify({kind:'REAL YarnGPT synthesis',language:values.language,bytes:audio.length,request_ms:Math.round(performance.now()-started),path:`artifacts/yarngpt-${values.language}.mp3`}));

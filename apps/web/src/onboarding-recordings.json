@@ -1,0 +1,30 @@
+{
+  "en": {},
+  "yo": {
+    "welcome": "/audio/yo/welcome.mp3",
+    "name": "/audio/yo/name.mp3",
+    "category": "/audio/yo/category.mp3",
+    "business": "/audio/yo/business.mp3",
+    "confirm": "/audio/yo/confirm.mp3",
+    "again": "/audio/yo/again.mp3",
+    "ready": "/audio/yo/ready.mp3"
+  },
+  "ha": {
+    "welcome": "/audio/ha/welcome.mp3",
+    "name": "/audio/ha/name.mp3",
+    "category": "/audio/ha/category.mp3",
+    "business": "/audio/ha/business.mp3",
+    "confirm": "/audio/ha/confirm.mp3",
+    "again": "/audio/ha/again.mp3",
+    "ready": "/audio/ha/ready.mp3"
+  },
+  "ig": {
+    "welcome": "/audio/ig/welcome.mp3",
+    "name": "/audio/ig/name.mp3",
+    "category": "/audio/ig/category.mp3",
+    "business": "/audio/ig/business.mp3",
+    "confirm": "/audio/ig/confirm.mp3",
+    "again": "/audio/ig/again.mp3",
+    "ready": "/audio/ig/ready.mp3"
+  }
+}

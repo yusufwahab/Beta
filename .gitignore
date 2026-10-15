@@ -9,3 +9,10 @@ dist/
 .browser-check/
 artifacts/
 *.tsbuildinfo
+
+.venv/
+__pycache__/
+*.pyc
+
+test-results/
+playwright-report/

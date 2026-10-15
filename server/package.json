@@ -7,10 +7,11 @@
     "build": "tsc",
     "start": "node --env-file-if-exists=.env dist/index.js",
     "migrate": "tsx --env-file-if-exists=.env src/migrate-cli.ts",
-    "test": "npm run build && node --test dist/sales.test.js dist/postgres.integration.test.js dist/http.integration.test.js dist/migrate.integration.test.js"
+    "test": "npm run build && node --test dist/sales.test.js dist/natlas.test.js dist/intent.test.js dist/tts.test.js dist/auth-email.test.js dist/postgres.integration.test.js dist/http.integration.test.js dist/migrate.integration.test.js"
   },
   "dependencies": {
     "@beta/shared": "1.0.0",
+    "@sentry/node": "^11.7.0",
     "@supabase/supabase-js": "^2.0.0",
     "cors": "^2.8.5",
     "express": "^5.0.0",

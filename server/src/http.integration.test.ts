@@ -14,7 +14,7 @@ test('HTTP API: onboarding, sales, expenses, debts, ajo, reporting and isolation
   if(token!=='Bearer beta-test-user'&&token!=='Bearer beta-test-outsider'){
    res.writeHead(401);res.end(JSON.stringify({message:'Invalid token'}));return;
   }
-  res.end(JSON.stringify({id:token==='Bearer beta-test-user'?user:outsider,aud:'authenticated',role:'authenticated',email:'test@example.invalid',app_metadata:{},user_metadata:{}}));
+  res.end(JSON.stringify({id:token==='Bearer beta-test-user'?user:outsider,aud:'authenticated',role:'authenticated',is_anonymous:token==='Bearer beta-test-user',...(token==='Bearer beta-test-outsider'?{email:'test@example.invalid',email_confirmed_at:new Date().toISOString()}:{}),app_metadata:{},user_metadata:{}}));
  });
  await new Promise<void>(resolve=>authStub.listen(0,'127.0.0.1',resolve));
  process.env.SUPABASE_URL=`http://127.0.0.1:${(authStub.address() as AddressInfo).port}`;
@@ -34,7 +34,7 @@ test('HTTP API: onboarding, sales, expenses, debts, ajo, reporting and isolation
  }
  const key=()=>({idempotency_key:crypto.randomUUID()});
  try{
-  await request('/me',undefined,401,'invalid');
+  await request('/me',undefined,401,'invalid');const rejectedOrigin=await fetch(base+'/me',{headers:{Origin:'https://untrusted.example',Authorization:'Bearer beta-test-user'}});assert.equal(rejectedOrigin.status,403);
   const business=await request('/onboarding',{profile:{trader_name:'API Trader',preferred_language:'en'},business:{name:'API Store',category:'Groceries',location:'Lagos',allow_negative_stock:false}},201);
   const prefix=`/businesses/${business.id}`;
   assert.equal((await request('/me')).businesses[0].name,'API Store');
@@ -74,6 +74,23 @@ test('HTTP API: onboarding, sales, expenses, debts, ajo, reporting and isolation
   assert.equal((await request(prefix+'/analytics')).sales.today,'2500.00');
   await request('/settings',{trader_name:'Updated Trader',preferred_language:'yo'},200,'beta-test-user','PATCH');assert.equal((await request('/me')).profile.preferred_language,'yo');
   await request(prefix+'/sales',{...key(),items:[{product_id:product.id,quantity:1,unit_price:'1.001'}],source:'manual',payment_status:'paid'},400);
+  // ASR is an explicit transcript fixture; parsing, HTTP, RLS and PostgreSQL writes are real.
+  async function command(transcript:string){const voice=(await pool.query('insert into voice_interactions(business_id,created_by,transcript,language,model) values($1,$2,$3,$4,$5) returning id',[business.id,user,transcript,'en','NCAIR1/NigerianAccentedEnglish'])).rows[0];return request(prefix+'/voice/command',{voice_interaction_id:voice.id});}
+  const countBefore=(await request(prefix+'/sales')).length;
+  const missing=await command('I sold two Oil');assert.deepEqual(missing.command.missing,['unit_price']);assert.equal(missing.confirmation_id,undefined);
+  const draft=await command('Fifteen thousand');assert.equal(draft.preview.total,'30000.00');assert.ok(draft.confirmation_id);const repeated=await command('yes');assert.equal(repeated.confirmation_id,draft.confirmation_id);assert.equal(repeated.command.entities.product,'Oil');
+  assert.equal((await request(prefix+'/sales')).length,countBefore);assert.equal((await request(prefix+'/products'))[0].stock_quantity,13);
+  await request(prefix+'/voice/confirm',{confirmation_id:draft.confirmation_id,confirmed:false},400);
+  await request(prefix+'/voice/confirm',{confirmation_id:draft.confirmation_id,confirmed:true},409,'beta-test-outsider');
+  const confirmed=await request(prefix+'/voice/confirm',{confirmation_id:draft.confirmation_id,confirmed:true});assert.equal(confirmed.total,'30000.00');
+  assert.equal((await request(prefix+'/voice/confirm',{confirmation_id:draft.confirmation_id,confirmed:true})).id,confirmed.id);
+  assert.equal((await request(prefix+'/products'))[0].stock_quantity,11);
+  const query=await command('How much did I make today?');assert.match(query.response,/32500/);assert.equal(query.confirmation_id,undefined);assert.match((await command('profit today')).response,/26000/);assert.match((await command('sales last week')).response,/0/);assert.match((await command('sales yesterday')).response,/0/);
+  const expenseDraft=await command('I spent 500 on transport');assert.ok(expenseDraft.confirmation_id);const expensesBefore=(await request(prefix+'/expenses')).length;
+  await request(prefix+'/voice/confirm',{confirmation_id:expenseDraft.confirmation_id,confirmed:true});assert.equal((await request(prefix+'/expenses')).length,expensesBefore+1);
+  const stockDraft=await command('add stock two Oil');assert.ok(stockDraft.confirmation_id);await request(prefix+'/voice/confirm',{confirmation_id:stockDraft.confirmation_id,confirmed:true});assert.equal((await request(prefix+'/products'))[0].stock_quantity,13);
+  await request(prefix+'/customers',{name:'Ada'});const debtDraft=await command('I lent 1000 to Ada');assert.ok(debtDraft.confirmation_id);await request(prefix+'/voice/confirm',{confirmation_id:debtDraft.confirmation_id,confirmed:true});
+  const repaymentMissing=await command('Ada repaid 250');assert.deepEqual(repaymentMissing.command.missing,['customer']);const repaymentDraft=await command('Ada');assert.ok(repaymentDraft.confirmation_id);await request(prefix+'/voice/confirm',{confirmation_id:repaymentDraft.confirmation_id,confirmed:true});assert.equal((await request(prefix+'/debts')).find((d:any)=>d.customer_name==='Ada').balance,'750.00');const cancelledDraft=await command('add stock two Oil');await request(prefix+'/voice/cancel',{cancelled:true});await request(prefix+'/voice/confirm',{confirmation_id:cancelledDraft.confirmation_id,confirmed:true},409);assert.equal((await request(prefix+'/products'))[0].stock_quantity,13);
  }finally{
   await new Promise<void>(resolve=>listener.close(()=>resolve()));
   await new Promise<void>(resolve=>authStub.close(()=>resolve()));

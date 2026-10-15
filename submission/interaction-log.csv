@@ -1,0 +1,1 @@
+interaction_id,participant_id,timestamp_with_timezone,language,task,expected_details,actual_transcript,actual_extracted_details,outcome,correction,latency_seconds,voice_interaction_id,sale_id,evidence_reference,feedback

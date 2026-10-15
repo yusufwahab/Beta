@@ -1,3 +1,5 @@
+import Start from './Start';
+import {VoiceLanguageProvider} from './VoiceLanguageProvider';
 import {BrowserRouter,Routes,Route,Navigate} from 'react-router-dom';
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import {lazy,Suspense} from 'react';
@@ -5,6 +7,7 @@ import Landing from './Landing';
 import {Loading} from './ui';
 import {SessionProvider,Protected} from './session';
 const Auth=lazy(()=>import('./Auth').then(m=>({default:m.Auth})));
+const VerifyOtp=lazy(()=>import('./VerifyOtp'));
 const Onboarding=lazy(()=>import('./Auth').then(m=>({default:m.Onboarding})));
 const Layout=lazy(()=>import('./Layout'));
 const Checkout=lazy(()=>import('./Checkout'));
@@ -17,4 +20,4 @@ const Ajo=lazy(()=>import('./pages').then(m=>({default:m.Ajo})));
 const Passport=lazy(()=>import('./pages').then(m=>({default:m.Passport})));
 const Settings=lazy(()=>import('./pages').then(m=>({default:m.Settings})));
 const client=new QueryClient({defaultOptions:{queries:{retry:1,staleTime:30000,refetchOnWindowFocus:false}}});
-export default function App(){return <QueryClientProvider client={client}><BrowserRouter><SessionProvider><Suspense fallback={<Loading/>}><Routes><Route path="/" element={<Landing/>}/><Route path="/auth" element={<Auth/>}/><Route element={<Protected/>}><Route path="/onboarding" element={<Onboarding/>}/><Route path="/app" element={<Layout/>}><Route index element={<Overview/>}/><Route path="checkout" element={<Checkout/>}/><Route path="sales" element={<Sales/>}/><Route path="inventory" element={<Inventory/>}/><Route path="expenses" element={<Expenses/>}/><Route path="debts" element={<Debts/>}/><Route path="ajo" element={<Ajo/>}/><Route path="passport" element={<Passport/>}/><Route path="ambient" element={<Checkout demo/>}/><Route path="settings" element={<Settings/>}/></Route></Route><Route path="*" element={<Navigate to="/" replace/>}/></Routes></Suspense></SessionProvider></BrowserRouter></QueryClientProvider>}
+export default function App(){return <QueryClientProvider client={client}><BrowserRouter><SessionProvider><VoiceLanguageProvider><Suspense fallback={<Loading/>}><Routes><Route path="/" element={<Landing/>}/><Route path="/start" element={<Start/>}/><Route path="/auth" element={import.meta.env.VITE_LEGACY_AUTH_ENABLED==='true'?<Auth/>:<Navigate to="/start" replace/>}/><Route path="/verify-otp" element={import.meta.env.VITE_LEGACY_AUTH_ENABLED==='true'?<VerifyOtp/>:<Navigate to="/start" replace/>}/><Route element={<Protected/>}><Route path="/onboarding" element={import.meta.env.VITE_LEGACY_AUTH_ENABLED==='true'?<Onboarding/>:<Navigate to="/start" replace/>}/><Route path="/app" element={<Layout/>}><Route index element={<Overview/>}/><Route path="checkout" element={<Checkout/>}/><Route path="sales" element={<Sales/>}/><Route path="inventory" element={<Inventory/>}/><Route path="expenses" element={<Expenses/>}/><Route path="debts" element={<Debts/>}/><Route path="ajo" element={<Ajo/>}/><Route path="passport" element={<Passport/>}/><Route path="ambient" element={<Checkout demo/>}/><Route path="settings" element={<Settings/>}/></Route></Route><Route path="*" element={<Navigate to="/" replace/>}/></Routes></Suspense></VoiceLanguageProvider></SessionProvider></BrowserRouter></QueryClientProvider>}
